@@ -1,0 +1,172 @@
+{
+  "eval_base64": {
+    "regex": "eval\\s*\\(\\s*base64_decode\\s*\\(",
+    "weight": 8,
+    "description": "Direct eval of base64 payloads (common webshell loader)"
+  },
+  "eval_gzinflate": {
+    "regex": "eval\\s*\\(\\s*gzinflate\\s*\\(",
+    "weight": 8,
+    "description": "Eval of gzinflate decoded content (obfuscated payloads)"
+  },
+  "preg_replace_eval_e": {
+    "regex": "preg_replace\\s*\\(.*?/e[imsUx]*\\)",
+    "weight": 7,
+    "description": "Use of preg_replace with /e modifier (remote code execution vector)"
+  },
+  "create_function": {
+    "regex": "create_function\\s*\\(",
+    "weight": 6,
+    "description": "create_function usage (deprecated and often abused)"
+  },
+  "assert_string": {
+    "regex": "assert\\s*\\(",
+    "weight": 6,
+    "description": "assert used with dynamic content"
+  },
+  "obfuscated_chr_hex": {
+    "regex": "(chr\\s*\\(|\\\\\\x[0-9a-fA-F]{2})",
+    "weight": 5,
+    "description": "chr() or hex escape usage often used in obfuscation"
+  },
+  "variable_variable": {
+    "regex": "\\$\\{?\\$[a-zA-Z_][a-zA-Z0-9_]*\\}?",
+    "weight": 4,
+    "description": "Variable variables (e.g. $$var) - often used to hide names"
+  },
+  "long_base64_block": {
+    "regex": "[A-Za-z0-9+/]{100,}={0,2}",
+    "weight": 4,
+    "description": "Very long base64-like block inside file (could be embedded payload)"
+  },
+  "remote_file_get": {
+    "regex": "(file_get_contents|fopen)\\s*\\(\\s*['\\\"]https?://",
+    "weight": 6,
+    "description": "Fetching remote content over HTTP(S) from code"
+  },
+  "curl_exec_remote": {
+    "regex": "curl_exec\\s*\\(",
+    "weight": 5,
+    "description": "curl_exec presence (look for remote fetch/POST calls)"
+  },
+  "fsockopen_remote": {
+    "regex": "fsockopen\\s*\\(|stream_socket_client\\s*\\(",
+    "weight": 6,
+    "description": "Raw socket connections - could indicate reverse shells/backconnect"
+  },
+  "system_exec_passthru": {
+    "regex": "\\b(system|exec|passthru|shell_exec)\\s*\\(",
+    "weight": 8,
+    "description": "Direct system execution functions (high risk)"
+  },
+  "obfuscated_concat": {
+    "regex": "\\$[a-zA-Z0-9_]+\\s*\\.\\s*\\$[a-zA-Z0-9_]+\\s*\\.\\s*\\$[a-zA-Z0-9_]+",
+    "weight": 3,
+    "description": "Concatenation of many variables — used to assemble obfuscated calls"
+  },
+  "xor_loop": {
+    "regex": "\\^\\s*\\$[a-zA-Z0-9_]+|xor\\s*\\(",
+    "weight": 5,
+    "description": "XOR-like operations for basic obfuscation"
+  },
+  "php_backconnect_ip": {
+    "regex": "(fsockopen|stream_socket_client)\\s*\\(\\s*['\\\"]\\d{1,3}(?:\\.\\d{1,3}){3}",
+    "weight": 8,
+    "description": "Socket to literal IP — often used for backconnect shells"
+  },
+  "suspicious_cron_insert": {
+    "regex": "crontab\\s*-l|/etc/cron\\b|crontab\\s*-e",
+    "weight": 3,
+    "description": "Script mentions cron manipulation (persistence)"
+  },
+  "suspicious_php_in_uploads": {
+    "regex": "wp-content/uploads/.+\\.(php|phtml|phar)$",
+    "weight": 8,
+    "description": "Executable inside uploads directory — commonly malicious"
+  },
+  "suspicious_file_write": {
+    "regex": "(fopen|file_put_contents|fwrite)\\s*\\(\\s*['\\\"][^'\\\"]+\\.(php|phtml|phar)\\b",
+    "weight": 7,
+    "description": "Code writing PHP files to disk"
+  },
+  "suspicious_shell_exec_obf": {
+    "regex": "preg_replace\\s*\\(.*?\\)\\s*;\\s*eval",
+    "weight": 7,
+    "description": "eval chained after preg_replace (possible obfuscated execution)"
+  },
+  "suspicious_mail_smtp": {
+    "regex": "\\bmail\\s*\\(|PHPMailer|Swift_Mailer",
+    "weight": 2,
+    "description": "Mailer libraries or mail usage; low risk alone but worth noting"
+  },
+  "suspicious_include_shell": {
+    "regex": "(include|require)_once\\s*\\(\\s*['\\\"][^'\\\"]*(shell|cmd|backdoor)[^'\\\"]*['\\\"]\\s*\\)",
+    "weight": 8,
+    "description": "Includes of files named like shell/backdoor"
+  },
+  "suspicious_php_eval": {
+    "regex": "\\beval\\s*\\(",
+    "weight": 8,
+    "description": "Generic eval usage"
+  },
+  "php_obf_unicode_escape": {
+    "regex": "\\\\u[0-9a-fA-F]{4}",
+    "weight": 3,
+    "description": "Unicode escape sequences inside strings — sometimes used in obfuscation"
+  },
+  "large_hex_block": {
+    "regex": "(?:0x[0-9a-fA-F]{40,}|\\\\x[0-9a-fA-F]{50,})",
+    "weight": 4,
+    "description": "Very long hex sequences — could be binary blobs or obfuscated payload"
+  },
+  "suspicious_serialized": {
+    "regex": "O:\\d+:\"[a-zA-Z0-9_\\\\]+\":\\d+:\\{",
+    "weight": 4,
+    "description": "Complex PHP serialized objects (phar/unserialize exploits possible)"
+  },
+  "php_eval_payload_in_comment": {
+    "regex": "\\/\\*[\\s\\S]{0,200}?base64_decode[\\s\\S]{0,200}?\\*\\/",
+    "weight": 5,
+    "description": "Hidden payloads inside large block comments"
+  },
+  "ipv4_in_code": {
+    "regex": "\\b\\d{1,3}(?:\\.\\d{1,3}){3}\\b",
+    "weight": 2,
+    "description": "IP addresses in code (review for suspicious endpoints)"
+  },
+  "suspicious_htaccess_rules": {
+    "regex": "RewriteRule\\s+.*(php|phtml|phar)",
+    "weight": 4,
+    "description": ".htaccess rewrite rules referencing PHP as a trap"
+  },
+  "suspicious_eval_obf_chars": {
+    "regex": "eval\\s*\\(\\s*\\$[a-zA-Z0-9_]+\\s*\\)",
+    "weight": 6,
+    "description": "Eval on a dynamic variable (often assembled content)"
+  },
+  "suspicious_dynamic_function": {
+    "regex": "\\$[a-zA-Z0-9_]+\\s*=\\s*create_function\\s*\\(",
+    "weight": 6,
+    "description": "Dynamic creation of functions"
+  },
+  "wordpress_abnormal_constants": {
+    "regex": "define\\s*\\(\\s*['\\\"](DB_PASSWORD|DB_USER|AUTH_KEY|SECURE_AUTH_KEY)['\\\"]\\s*,",
+    "weight": 3,
+    "description": "Changes to core WP constants - highlight for review"
+  },
+  "suspicious_sockets_shell": {
+    "regex": "socket_create\\s*\\(",
+    "weight": 7,
+    "description": "Socket API used in PHP (possible shell/backconnect)"
+  },
+  "suspicious_remote_exec_patterns": {
+    "regex": "\\b(eval|assert|preg_replace)\\s*\\(\\s*\\$\\w+\\s*\\)",
+    "weight": 7,
+    "description": "Dynamic eval/assert/preg_replace on variables"
+  },
+  "suspicious_obf_concatenate": {
+    "regex": "\\$\\w+\\s*=\\s*\\$\\w+\\s*\\.\\s*\\$\\w+\\s*\\.\\s*\\$\\w+",
+    "weight": 3,
+    "description": "Multiple variable concatenation (obfuscation construction)"
+  }
+}
