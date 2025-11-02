@@ -1,311 +1,301 @@
 {
   "eval_function": {
-    "regex": "\\beval\\s*\\(",
-    "weight": 4,
+    "regex": "(?i)\\beval\\s*\\(",
+    "weight": 5,
     "category": "Code Execution",
     "severity": "High",
-    "description": "Detects eval() execution, frequently used for running obfuscated or injected PHP code.",
+    "description": "Detects use of eval(), which executes arbitrary PHP code. Often used in injected or obfuscated malware payloads.",
     "reference": "https://www.php.net/manual/en/function.eval.php"
   },
   "assert_function": {
-    "regex": "\\bassert\\s*\\(",
+    "regex": "(?i)\\bassert\\s*\\(",
     "weight": 4,
     "category": "Code Execution",
     "severity": "High",
-    "description": "Detects assert() usage, which can execute arbitrary code if untrusted input is passed.",
+    "description": "Detects assert() usage that can execute arbitrary code when used with dynamic input.",
     "reference": "https://owasp.org/www-community/attacks/Code_Injection"
+  },
+  "error_suppression_eval": {
+    "regex": "@eval\\s*\\(",
+    "weight": 5,
+    "category": "Code Execution",
+    "severity": "High",
+    "description": "Eval wrapped with error suppression, a typical signature of concealed PHP malware."
+  },
+  "variable_eval_chain": {
+    "regex": "\\$[a-zA-Z_][a-zA-Z0-9_]*\\s*=\\s*['\"]?base64_decode",
+    "weight": 4,
+    "category": "Obfuscation",
+    "severity": "High",
+    "description": "Encoded variable assignment that decodes and executes hidden payloads."
   },
   "base64_decode": {
-    "regex": "base64_decode\\s*\\(",
+    "regex": "(?i)base64_decode\\s*\\(",
     "weight": 3,
     "category": "Obfuscation",
     "severity": "Medium",
-    "description": "Base64 decoding commonly appears in encoded malware payloads and backdoors.",
-    "reference": "https://owasp.org/www-community/attacks/Code_Injection"
+    "description": "Base64 decoding frequently appears in encoded backdoors and hidden code blocks."
   },
-  "gzinflate": {
-    "regex": "gzinflate\\s*\\(",
-    "weight": 3,
+  "rot13_chain": {
+    "regex": "(str_rot13\\s*\\(.*base64_decode|base64_decode\\s*\\(.*str_rot13)",
+    "weight": 4,
     "category": "Obfuscation",
-    "severity": "Medium",
-    "description": "Detects compressed payload decoding, often paired with base64_decode in malware.",
-    "reference": "https://www.php.net/manual/en/function.gzinflate.php"
-  },
-  "str_rot13": {
-    "regex": "str_rot13\\s*\\(",
-    "weight": 2,
-    "category": "Obfuscation",
-    "severity": "Low",
-    "description": "ROT13 encoding used for concealing code or URLs in malware.",
-    "reference": "https://www.php.net/manual/en/function.str-rot13.php"
-  },
-  "hex_encoding": {
-    "regex": "\\\\x[0-9a-fA-F]{2}",
-    "weight": 2,
-    "category": "Obfuscation",
-    "severity": "Medium",
-    "description": "Hex-encoded characters may indicate obfuscated payloads or hidden commands."
-  },
-  "chr_function": {
-    "regex": "chr\\s*\\(",
-    "weight": 2,
-    "category": "Obfuscation",
-    "severity": "Medium",
-    "description": "Character assembly from ASCII values, often used in obfuscated malware strings."
-  },
-  "preg_replace_mod_e": {
-    "regex": "preg_replace\\s*\\(.*?/e.*?\\)",
-    "weight": 3,
-    "category": "Deprecated Function Exploit",
-    "severity": "Medium",
-    "description": "Deprecated /e modifier can be abused for arbitrary code execution.",
-    "reference": "https://www.php.net/manual/en/reference.pcre.pattern.modifiers.php"
-  },
-  "create_function": {
-    "regex": "create_function\\s*\\(",
-    "weight": 3,
-    "category": "Dynamic Function Creation",
     "severity": "High",
-    "description": "Dynamic anonymous functions can hide injected code or payloads."
+    "description": "ROT13 + base64 decoding chain, a classic obfuscation technique for PHP malware."
   },
-  "shell_exec": {
-    "regex": "shell_exec\\s*\\(",
+  "compressed_payload": {
+    "regex": "(gzinflate|gzuncompress|gzdecode)\\s*\\(",
+    "weight": 4,
+    "category": "Obfuscation",
+    "severity": "Medium",
+    "description": "Compressed payload decoding, often used alongside base64_decode for packed malware."
+  },
+  "xor_obfuscation": {
+    "regex": "\\$[A-Za-z0-9_]+\\s*\\^\\s*['\"]",
+    "weight": 4,
+    "category": "Obfuscation",
+    "severity": "High",
+    "description": "XOR operations on string literals are a hallmark of XOR-encrypted PHP malware."
+  },
+  "dynamic_variable_exec": {
+    "regex": "\\${\\$_(GET|POST|REQUEST)\\[",
     "weight": 5,
-    "category": "Command Execution",
+    "category": "Dynamic Execution",
     "severity": "High",
-    "description": "Executes system commands; commonly used in web shells.",
-    "reference": "https://attack.mitre.org/techniques/T1059/"
+    "description": "Dynamic variable creation from user input; frequently used in backdoors and remote shells."
   },
-  "system_exec": {
-    "regex": "(system|exec|passthru)\\s*\\(",
-    "weight": 5,
-    "category": "Command Execution",
-    "severity": "High",
-    "description": "System-level command execution functions; typical of PHP backdoors."
-  },
-  "backtick_execution": {
-    "regex": "`[^`]+`",
-    "weight": 4,
-    "category": "Command Execution",
-    "severity": "High",
-    "description": "Backtick operators execute shell commands directly."
-  },
-  "fsockopen_http": {
-    "regex": "fsockopen\\s*\\([^,]+,\\s*[0-9]+\\)",
-    "weight": 3,
-    "category": "Network Communication",
-    "severity": "Medium",
-    "description": "Socket opening function; may be used for backdoor network communication."
-  },
-  "curl_exec": {
-    "regex": "curl_exec\\s*\\(",
-    "weight": 2,
-    "category": "Network Communication",
-    "severity": "Medium",
-    "description": "Detects cURL execution, can be used to fetch remote payloads."
-  },
-  "remote_include": {
-    "regex": "(include|require)(_once)?\\s*\\(['\"]https?:",
-    "weight": 4,
-    "category": "Remote Inclusion",
-    "severity": "High",
-    "description": "Detects inclusion of remote PHP files; major security risk.",
-    "reference": "https://owasp.org/www-community/vulnerabilities/PHP_File_Inclusion"
-  },
-  "file_get_contents_http": {
-    "regex": "file_get_contents\\s*\\(['\"]https?:",
-    "weight": 3,
-    "category": "Remote Inclusion",
-    "severity": "High",
-    "description": "Remote file reads over HTTP; frequently seen in downloader scripts."
-  },
-  "unlink": {
-    "regex": "\\bunlink\\s*\\(",
-    "weight": 2,
-    "category": "File Manipulation",
-    "severity": "Medium",
-    "description": "Detects file deletion behaviour; may indicate file-wiping malware."
-  },
-  "fopen_write": {
-    "regex": "fopen\\s*\\(.*?,\\s*['\"]w",
-    "weight": 2,
-    "category": "File Manipulation",
-    "severity": "Medium",
-    "description": "Detects writing new files, which could indicate dropped payloads."
-  },
-  "move_uploaded_file": {
-    "regex": "move_uploaded_file\\s*\\(",
-    "weight": 3,
-    "category": "File Manipulation",
-    "severity": "Medium",
-    "description": "Detects potential abuse of file uploads to place PHP shells on server."
-  },
-  "php_mail": {
-    "regex": "mail\\s*\\(",
-    "weight": 2,
-    "category": "Abuse / Spam",
-    "severity": "Low",
-    "description": "Mail() function, often abused in spam scripts."
-  },
-  "wp_eval_injection": {
-    "regex": "wp_eval_request|wp_exec|wp_remote_eval",
-    "weight": 4,
-    "category": "WordPress Exploit",
-    "severity": "High",
-    "description": "Malicious functions mimicking WordPress core calls to execute code."
-  },
-  "wp_option_injection": {
-    "regex": "update_option\\s*\\(\\s*['\"]siteurl['\"]",
-    "weight": 3,
-    "category": "WordPress Exploit",
-    "severity": "Medium",
-    "description": "Detects modification of siteurl, often used in redirect or pharma hacks."
-  },
-  "wp_fake_plugin": {
-    "regex": "Plugin Name:\\s*(Backdoor|Malware|Shell)",
-    "weight": 3,
-    "category": "WordPress Exploit",
-    "severity": "Medium",
-    "description": "Fake or malicious plugin headers commonly used for persistence."
-  },
-  "wp_ajax_injection": {
-    "regex": "add_action\\s*\\(\\s*['\"]wp_ajax_",
-    "weight": 2,
-    "category": "WordPress Exploit",
-    "severity": "Low",
-    "description": "AJAX endpoints can be abused for unauthenticated actions."
-  },
-  "mysqli_query_inject": {
-    "regex": "mysqli_query\\s*\\([^)]*\\$_(GET|POST|REQUEST)",
-    "weight": 3,
-    "category": "SQL Injection",
-    "severity": "High",
-    "description": "SQL queries with unsanitised user input detected."
-  },
-  "pdo_query_inject": {
-    "regex": "->query\\s*\\([^)]*\\$_(GET|POST|REQUEST)",
-    "weight": 3,
-    "category": "SQL Injection",
-    "severity": "High",
-    "description": "PDO queries with direct user input — classic SQL injection pattern."
-  },
-  "eval_post_data": {
-    "regex": "eval\\s*\\(\\s*\\$_(POST|GET|REQUEST)",
+  "hidden_php_tag": {
+    "regex": "<\\?(?:php)?\\s*@?eval|<\\?=\\s*@?eval",
     "weight": 5,
     "category": "Injection / Backdoor",
     "severity": "High",
-    "description": "Remote code execution via eval() on user input; major backdoor indicator."
+    "description": "Hidden PHP opening tag combined with eval(), common in injected payloads."
   },
-  "file_upload_php": {
-    "regex": "Content-Type:\\s*application/x-php",
-    "weight": 4,
-    "category": "File Upload Abuse",
+  "include_wrapper": {
+    "regex": "(include|require)(_once)?\\s*\\(\\s*\\$\\_",
+    "weight": 5,
+    "category": "Remote Inclusion",
     "severity": "High",
-    "description": "PHP upload header detected, used to smuggle PHP shells."
+    "description": "Inclusion of files using user input — typical of RFI vulnerabilities."
   },
-  "wordpress_config_exposure": {
-    "regex": "define\\s*\\(\\s*['\"]DB_PASSWORD['\"]",
-    "weight": 2,
-    "category": "Sensitive Data",
-    "severity": "Low",
-    "description": "Database credentials exposed in configuration file."
+  "remote_url_include": {
+    "regex": "(include|require)(_once)?\\s*\\(['\"]https?://",
+    "weight": 5,
+    "category": "Remote Inclusion",
+    "severity": "High",
+    "description": "Direct remote include of PHP code via HTTP/HTTPS; highly dangerous."
   },
-  "php_error_reporting": {
-    "regex": "error_reporting\\s*\\(0\\)",
-    "weight": 2,
-    "category": "Evasion",
-    "severity": "Low",
-    "description": "Disabling error reporting can conceal malicious activity."
+  "function_overloading": {
+    "regex": "function\\s+\\w+\\s*\\(.*\\)\\s*\\{[^}]*\\b(eval|exec|system)\\b",
+    "weight": 4,
+    "category": "Backdoor",
+    "severity": "High",
+    "description": "Function wrappers that hide command execution calls."
   },
-  "disable_functions": {
-    "regex": "ini_set\\s*\\(\\s*['\"]disable_functions['\"]",
-    "weight": 2,
-    "category": "Evasion",
+  "ua_backdoor": {
+    "regex": "\\$_SERVER\\['HTTP_USER_AGENT'\\]\\s*==",
+    "weight": 4,
+    "category": "Conditional Backdoor",
+    "severity": "High",
+    "description": "Backdoor triggered via specific User-Agent string."
+  },
+  "password_backdoor": {
+    "regex": "\\$_(GET|POST|REQUEST)\\[['\"](pass|pwd|key)['\"]\\]",
+    "weight": 5,
+    "category": "Backdoor",
+    "severity": "High",
+    "description": "Password-activated web shell triggers common in PHP backdoors."
+  },
+  "function_assert_chain": {
+    "regex": "(eval|assert)\\s*\\(\\s*base64_decode",
+    "weight": 5,
+    "category": "Backdoor",
+    "severity": "High",
+    "description": "Encoded payloads executed directly using eval/assert."
+  },
+  "file_put_contents_dropper": {
+    "regex": "file_put_contents\\s*\\(.*base64_decode",
+    "weight": 4,
+    "category": "Dropper",
+    "severity": "High",
+    "description": "Writes decoded malware payloads to disk — a strong indicator of active infection."
+  },
+  "wordpress_fake_plugin": {
+    "regex": "Plugin Name:\\s*(Backdoor|WSO|FilesMan|IndoXploit|b374k)",
+    "weight": 4,
+    "category": "WordPress Exploit",
+    "severity": "High",
+    "description": "Fake plugin header used by web shells disguised as legitimate plugins."
+  },
+  "wordpress_unauth_ajax": {
+    "regex": "add_action\\s*\\(\\s*['\"]wp_ajax_nopriv_",
+    "weight": 3,
+    "category": "WordPress Exploit",
     "severity": "Medium",
-    "description": "Altering PHP disable_functions list; may re-enable dangerous commands."
+    "description": "AJAX endpoint for unauthenticated users — can be abused to trigger code remotely."
   },
-  "phpspy_webshell": {
-    "regex": "PHPSPY|FilesMan|WSOshell|b374k",
+  "malicious_wp_option": {
+    "regex": "update_option\\s*\\(\\s*['\"](siteurl|home)['\"]",
+    "weight": 3,
+    "category": "WordPress Exploit",
+    "severity": "Medium",
+    "description": "Pharma or redirect hacks modifying WordPress URL settings."
+  },
+  "email_spammer": {
+    "regex": "\\$headers\\s*=\\s*['\"].*\\bContent-Type: text/html",
+    "weight": 2,
+    "category": "Spam / Mailer",
+    "severity": "Medium",
+    "description": "Mailer script creating headers for mass mailing or phishing."
+  },
+  "hidden_iframe_injection": {
+    "regex": "<iframe[^>]+(display\\s*:\\s*none|width=\\\"0\\\"|height=\\\"0\\\")",
+    "weight": 3,
+    "category": "HTML Injection",
+    "severity": "Medium",
+    "description": "Invisible iframe used for redirects, tracking, or hidden script loading."
+  },
+  "js_unpacker_payload": {
+    "regex": "eval\\s*\\(\\s*function\\s*\\(.*\\)\\s*\\{",
+    "weight": 3,
+    "category": "JavaScript Injection",
+    "severity": "Medium",
+    "description": "Self-executing JS functions used to unpack obfuscated payloads."
+  },
+  "seo_spam_link": {
+    "regex": "<a\\s+href=['\"]https?://[^'\"]*(viagra|casino|porn|dating)",
+    "weight": 2,
+    "category": "SEO Spam",
+    "severity": "Low",
+    "description": "Injected spam links in compromised WordPress posts or templates."
+  },
+  "php_shell_fingerprint": {
+    "regex": "(FilesMan|WSO|r57|c99|b374k|IndoXploit|AlfaShell|Symlink|Weevely)",
+    "weight": 6,
+    "category": "Web Shell Signature",
+    "severity": "Critical",
+    "description": "Known PHP shell code fragments detected; immediate high-risk indicator."
+  },
+  "self_delete": {
+    "regex": "unlink\\s*\\(__FILE__\\)",
+    "weight": 4,
+    "category": "Persistence",
+    "severity": "Medium",
+    "description": "Malware self-deletion used to hide traces after execution."
+  },
+  "disable_logs": {
+    "regex": "ini_set\\s*\\(\\s*['\"]error_log['\"],\\s*['\"]?['\"]?\\)",
+    "weight": 2,
+    "category": "Evasion",
+    "severity": "Low",
+    "description": "Disabling PHP error logs to hide execution traces."
+  },
+  "temp_file_payload": {
+    "regex": "sys_get_temp_dir\\s*\\(\\).*file_put_contents",
+    "weight": 3,
+    "category": "Dropper",
+    "severity": "Medium",
+    "description": "Temporary file creation for payloads or shell scripts."
+  },
+  "reverse_shell": {
+    "regex": "(bash -i >& /dev/tcp|nc -e /bin/sh|php -r .*fsockopen)",
+    "weight": 6,
+    "category": "Command Execution",
+    "severity": "Critical",
+    "description": "Reverse shell pattern detected — full remote code execution."
+  }
+  "php_in_nonphp_file": {
+    "regex": "<\\?php",
+    "weight": 5,
+    "category": "Embedded PHP",
+    "severity": "High",
+    "description": "Detects PHP opening tag in files that are not expected to contain PHP (images, uploads, templates). Frequently indicates a dropped webshell.",
+    "reference": "https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload"
+  },
+  "large_base64_blob": {
+    "regex": "[A-Za-z0-9+/]{200,}={0,2}",
+    "weight": 4,
+    "category": "Obfuscation",
+    "severity": "High",
+    "description": "Large contiguous base64 block. Legitimate in some cases, but commonly used to carry encoded payloads or exfiltrated data.",
+    "reference": "https://owasp.org/www-community/attacks/Code_Injection"
+  },
+  "known_webshell_filenames": {
+    "regex": "(?:shell|wso|b374k|c99|r57|phpseclib|filesman|phpspy)\\.(?:php|phtml|inc)$",
     "weight": 5,
     "category": "Web Shell Signature",
     "severity": "High",
-    "description": "Common PHP web shell signatures detected."
+    "description": "Common web shell filenames and variants. Matches common malicious filenames dropped by attackers."
   },
-  "variable_function_call": {
-    "regex": "\\$\\w+\\s*\\(",
-    "weight": 3,
-    "category": "Dynamic Execution",
-    "severity": "Medium",
-    "description": "Variable function call — may be used for indirect code execution."
-  },
-  "eval_str_replace": {
-    "regex": "eval\\s*\\(\\s*str_replace",
-    "weight": 4,
-    "category": "Obfuscation",
+  "php_in_uploads_path": {
+    "regex": "wp-content/uploads/.*\\.(?:php|phtml|phar|inc)",
+    "weight": 5,
+    "category": "File Upload Abuse",
     "severity": "High",
-    "description": "Obfuscated payload unpacking using str_replace inside eval."
+    "description": "PHP files located in uploads path. Strong indicator of uploaded webshells or dropped payloads.",
+    "reference": "https://owasp.org/www-community/attacks/Unrestricted_File_Upload"
   },
-  "rotating_encoding_chain": {
-    "regex": "(base64_decode|gzinflate|str_rot13).*(base64_decode|gzinflate|str_rot13)",
+  "serialized_object_injection": {
+    "regex": "O:\\d+:\"[A-Za-z0-9_\\\\]+\":\\d+:\\{",
     "weight": 4,
-    "category": "Obfuscation",
+    "category": "Object Injection",
     "severity": "High",
-    "description": "Layered decoding sequence typical of obfuscated malware droppers."
+    "description": "PHP serialized object pattern (O:...). Can indicate gadget chains or unsafe unserialise usage leading to RCE.",
+    "reference": "https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection"
   },
-  "suspicious_variable_assignment": {
-    "regex": "\\$_(POST|GET|REQUEST)\\s*\\[.*?\\]\\s*=\\s*['\"]",
-    "weight": 2,
-    "category": "Suspicious Assignment",
-    "severity": "Low",
-    "description": "User input directly assigned to a variable without validation."
-  },
-  "data_uri_payload": {
-    "regex": "data:text\\/html;base64,",
+  "suspicious_userini_disable": {
+    "regex": "\\.user\\.ini|ini_set\\s*\\(\\s*['\\\"]disable_functions['\\\"]",
     "weight": 3,
-    "category": "Embedded Payload",
+    "category": "Evasion",
     "severity": "Medium",
-    "description": "Detects inline base64-encoded HTML or JS payloads."
+    "description": "Changes to disable_functions or presence of .user.ini may be used to evade platform protections.",
+    "reference": "https://www.php.net/manual/en/ini.core.php"
   },
-  "iframe_injection": {
-    "regex": "<iframe[^>]+src=",
+  "htaccess_rewrites_pharma": {
+    "regex": "RewriteRule\\s+.*(google|bing|yahoo|checkout|paypal|account|wp-login)\\b",
     "weight": 3,
-    "category": "HTML Injection",
-    "severity": "Medium",
-    "description": "Embedded iframe often used in malicious redirects or adware injections."
+    "category": "Redirect / Pharma",
+    "severity": "High",
+    "description": "Rewrite rules altering or redirecting traffic to suspicious keywords (pharma/checkout/password pages). Often used in SEO/pharma compromises.",
+    "reference": "https://www.sucuri.net/guides/"
   },
-  "js_eval": {
-    "regex": "eval\\s*\\(",
-    "weight": 2,
-    "category": "JavaScript Execution",
-    "severity": "Medium",
-    "description": "JavaScript eval() execution; used for obfuscated scripts."
-  },
-  "js_obfuscation_hex": {
-    "regex": "\\\\x[0-9A-F]{2}",
-    "weight": 2,
-    "category": "JavaScript Obfuscation",
-    "severity": "Medium",
-    "description": "Hexadecimal encoded characters in JavaScript strings."
-  },
-  "hidden_iframe": {
-    "regex": "<iframe[^>]+style=['\"]?display:\\s*none",
-    "weight": 3,
-    "category": "HTML Injection",
-    "severity": "Medium",
-    "description": "Hidden iframe used for drive-by redirect or pixel tracking."
-  },
-  "suspicious_eval_include": {
-    "regex": "eval\\s*\\(.*include",
+  "suspicious_cron_php_exec": {
+    "regex": "(?:crontab|cron).*\\bphp\\b.*(wget|curl|php)\\s",
     "weight": 4,
-    "category": "Execution Chain",
+    "category": "Persistence",
     "severity": "High",
-    "description": "Combined eval + include pattern often used to dynamically load remote payloads."
+    "description": "Cron lines invoking PHP or remote fetches. Attackers often schedule persistence tasks using cron.",
+    "reference": "https://attack.mitre.org/techniques/T1053/"
   },
-  "suspicious_var_dump": {
-    "regex": "var_dump\\s*\\(",
-    "weight": 1,
-    "category": "Debug Artefact",
-    "severity": "Low",
-    "description": "Debug artefact; low risk but worth reviewing in production code."
+  "suspicious_js_minified_singleline": {
+    "regex": "<script[^>]*>[^\\n]{2000,}</script>",
+    "weight": 3,
+    "category": "JS Obfuscation",
+    "severity": "Medium",
+    "description": "Very large single-line inline script blocks (minified/obfuscated). Common in malvertising and crypto-miners.",
+    "reference": "https://owasp.org/www-community/attacks/Code_Injection"
+  },
+  "suspicious_function_wrappers": {
+    "regex": "\\$\\_\\w+\\s*=\\s*base64_decode\\(|preg_replace\\s*\\(.*?/e|create_function\\s*\\(",
+    "weight": 4,
+    "category": "Obfuscation / Execution",
+    "severity": "High",
+    "description": "Chains of functions and wrappers used to unpack and execute payloads; flags typical obfuscation+execution patterns."
+  },
+  "suspicious_htaccess_php_flags": {
+    "regex": "AddHandler\\s+application/x-httpd-php|SetHandler\\s+php-script",
+    "weight": 3,
+    "category": "Server Config",
+    "severity": "Medium",
+    "description": ".htaccess or config that forces PHP parsing in non-php directories (uploads). May be used to run uploaded PHP.",
+    "reference": "https://httpd.apache.org/docs/"
+  },
+  "composer_auto_prepend": {
+    "regex": "auto_prepend_file\\s*=|ComposerAutoloadInit",
+    "weight": 3,
+    "category": "Supply Chain / Autoload",
+    "severity": "Medium",
+    "description": "Signs of autoload or auto_prepend manipulation. Attacker may persist code via autoload or prepend hooks.",
+    "reference": "https://getcomposer.org/doc/01-basic-usage.md"
   }
 }
