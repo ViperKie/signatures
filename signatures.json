@@ -203,7 +203,7 @@
     "category": "Command Execution",
     "severity": "Critical",
     "description": "Reverse shell pattern detected — full remote code execution."
-  }
+  },
   "php_in_nonphp_file": {
     "regex": "<\\?php",
     "weight": 5,
